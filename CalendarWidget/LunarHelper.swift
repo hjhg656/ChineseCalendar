@@ -1,7 +1,6 @@
 import Foundation
 
-/// 小组件用的农历换算（和主 App 的 ChineseCalendarHelper 同一套逻辑，
-/// 小组件扩展是独立 target，所以这里放一份精简版，不依赖主 App 的文件）。
+/// 小组件用的农历 + 节假日换算（独立 target，放一份精简版）。
 enum WidgetLunarHelper {
 
     static let gregorian: Calendar = {
@@ -90,6 +89,38 @@ enum WidgetLunarHelper {
         case (10, 1): return "国庆节"
         default: return nil
         }
+    }
+
+    // 法定休息日（与主 App 保持一致，2026-2027）
+    private static let restDays: Set<String> = [
+        "2026-01-01", "2026-01-02", "2026-01-03",
+        "2026-02-15", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19",
+        "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23",
+        "2026-04-04", "2026-04-05", "2026-04-06",
+        "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05",
+        "2026-06-19", "2026-06-20", "2026-06-21",
+        "2026-09-25", "2026-09-26", "2026-09-27",
+        "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07",
+        "2027-01-01", "2027-01-02", "2027-01-03",
+        "2027-02-05", "2027-02-06", "2027-02-07", "2027-02-08", "2027-02-09",
+        "2027-02-10", "2027-02-11", "2027-02-12", "2027-02-13",
+        "2027-04-03", "2027-04-04", "2027-04-05",
+        "2027-05-01", "2027-05-02", "2027-05-03", "2027-05-04", "2027-05-05",
+        "2027-06-09",
+        "2027-09-15",
+        "2027-10-01", "2027-10-02", "2027-10-03", "2027-10-04", "2027-10-05", "2027-10-06", "2027-10-07"
+    ]
+
+    private static let dateKeyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    static func isRestDay(_ date: Date) -> Bool {
+        restDays.contains(dateKeyFormatter.string(from: date))
     }
 
     static func weekdayShortName(for date: Date) -> String {
