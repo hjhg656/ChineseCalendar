@@ -91,13 +91,15 @@ final class EventStore: ObservableObject {
         let dayEnd = ChineseCalendarHelper.addingDay(1, to: dayStart)
         let predicate = store.predicateForIncompleteReminders(
             withDueDateStarting: dayStart, ending: dayEnd, calendars: nil)
-        do {
-            let reminders = try await store.fetchReminders(matching: predicate)
-            remindersForDay = reminders.sorted {
-                ($0.dueDateComponents?.date ?? Date()) < ($1.dueDateComponents?.date ?? Date())
+        // fetchReminders 的 async 形式要 iOS 18+ 的 SDK 才有，GitHub 这台机器的
+        // SDK 里只有回调形式，这里用 continuation 包一层，老 SDK 也能编。
+        let reminders: [EKReminder] = await withCheckedContinuation { continuation in
+            _ = store.fetchReminders(matching: predicate) { found in
+                continuation.resume(returning: found ?? [])
             }
-        } catch {
-            remindersForDay = []
+        }
+        remindersForDay = reminders.sorted {
+            ($0.dueDateComponents?.date ?? Date()) < ($1.dueDateComponents?.date ?? Date())
         }
     }
 
