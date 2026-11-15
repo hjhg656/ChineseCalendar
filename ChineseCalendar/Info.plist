@@ -5,19 +5,23 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>ChineseCalendar</string>
+	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.example.ChineseCalendar</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ChineseCalendar</string>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>读取系统日历里的日程，在日历上显示，方便你一天看全。</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>读取提醒事项里当天到期的提醒，在日期详情里显示。</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>
