@@ -61,10 +61,22 @@ struct CalendarWidgetEntryView: View {
     private var smallView: some View {
         let date = entry.date
         let g = WidgetLunarHelper.gregorian
+        let isRest = WidgetLunarHelper.isRestDay(date)
         return VStack(alignment: .leading, spacing: 2) {
-            Text("\(g.component(.month, from: date))月\(g.component(.day, from: date))日")
-                .font(.headline)
-                .foregroundStyle(primaryText)
+            HStack {
+                Text("\(g.component(.month, from: date))月\(g.component(.day, from: date))日")
+                    .font(.headline)
+                    .foregroundStyle(primaryText)
+                if isRest {
+                    Text("休")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Color.red, in: Capsule())
+                }
+            }
             Text(WidgetLunarHelper.weekdayShortName(for: date))
                 .font(.subheadline)
                 .foregroundStyle(secondaryText)
@@ -119,6 +131,11 @@ struct CalendarWidgetEntryView: View {
                             .font(.caption2)
                             .lineLimit(1)
                             .foregroundStyle(WidgetLunarHelper.festival(for: day) != nil ? accentText : secondaryText)
+                        if WidgetLunarHelper.isRestDay(day) {
+                            Text("休")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(accentText)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                 }
