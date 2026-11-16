@@ -30,7 +30,7 @@ struct CalendarWidgetEntryView: View {
 
     // 小组件背景和主题色从 App 设置里读（App Groups 共享设置）。
     private var themeColor: Color {
-        AppSettings.themeColor(named: AppSettings.readThemeColorName())
+        AppSettings.readThemeColor()
     }
 
     private var isTransparent: Bool {
@@ -61,13 +61,13 @@ struct CalendarWidgetEntryView: View {
     private var smallView: some View {
         let date = entry.date
         let g = WidgetLunarHelper.gregorian
-        let isRest = WidgetLunarHelper.isRestDay(date)
+        let info = WidgetLunarHelper.dayInfo(for: date)
         return VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text("\(g.component(.month, from: date))月\(g.component(.day, from: date))日")
                     .font(.headline)
                     .foregroundStyle(primaryText)
-                if isRest {
+                if info.worktime == 2 {
                     Text("休")
                         .font(.caption2)
                         .fontWeight(.bold)
@@ -90,10 +90,90 @@ struct CalendarWidgetEntryView: View {
             Text("\(WidgetLunarHelper.stemBranchYear(for: date)) · \(WidgetLunarHelper.zodiac(for: date))年")
                 .font(.caption)
                 .foregroundStyle(secondaryText)
-            if let festival = WidgetLunarHelper.festival(for: date) {
-                Text(festival)
+            if let name = info.displayName {
+                Text(name)
                     .font(.caption)
                     .foregroundStyle(accentText)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding()
+        .containerBackground(backgroundColor, for: .widget)
+        .widgetURL(deepLink(for: date))
+    }
+
+    // MARK: - 中尺寸：一周横排 + 底部信息行（按小历截图）
+
+    private var mediumView: some View {
+        let g = WidgetLunarHelper.gregorian
+        let today = entry.date
+        let days = WidgetLunarHelper.weekContaining(today)
+        let todayInfo = WidgetLunarHelper.dayInfo(for: today)
+        return VStack(alignment: .leading, spacing: 6) {
+            // 标题：2026 / 11 · 46（箭头是装饰，小组件点哪儿都打开 App）
+            HStack {
+                Image(systemName: "chevron.left")
+                    .font(.subheadline)
+                    .foregroundStyle(secondaryText)
+                Spacer()
+                Text("\(g.component(.year, from: today)) / \(g.component(.month, from: today)) · \(todayInfo.week)")
+                    .font(.headline)
+                    .foregroundStyle(primaryText)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.subheadline)
+                    .foregroundStyle(secondaryText)
+            }
+            // 星期头
+            HStack(spacing: 0) {
+                ForEach(WidgetLunarHelper.weekdaySymbols(), id: \.self) { w in
+                    Text(w)
+                        .font(.caption)
+                        .foregroundStyle(secondaryText)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            // 一周 7 天横排
+            HStack(spacing: 0) {
+                ForEach(days, id: \.self) { day in
+                    let info = WidgetLunarHelper.dayInfo(for: day)
+                    let isToday = g.isDateInToday(day)
+                    Link(destination: deepLink(for: day)) {
+                        VStack(spacing: 2) {
+                            Text("\(g.component(.day, from: day))")
+                                .font(.headline)
+                                .fontWeight(isToday ? .bold : .regular)
+                                .foregroundStyle(isToday ? .white : primaryText)
+                                .frame(width: 30, height: 30)
+                                .background(isToday ? Color.red : Color.clear, in: Circle())
+                            Text(info.displayName ?? WidgetLunarHelper.lunarShortString(for: day))
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .foregroundStyle(info.hasHoliday ? accentText : secondaryText)
+                            if info.worktime == 2 {
+                                Text("休")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(accentText)
+                            } else if info.worktime == 1 {
+                                Text("班")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(accentText)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            Spacer()
+            // 底部信息行：红竖线 + 日期/周/干支/农历
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(Color.red)
+                    .frame(width: 3)
+                Text("\(g.component(.month, from: today))月\(g.component(.day, from: today))日 第\(todayInfo.week)周 \(WidgetLunarHelper.stemBranchYear(for: today).dropLast())(\(WidgetLunarHelper.zodiac(for: today)))年 \(WidgetLunarHelper.lunarMonthName(for: today)) \(WidgetLunarHelper.lunarDayName(for: today))")
+                    .font(.subheadline)
+                    .foregroundStyle(primaryText)
+                    .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -101,58 +181,13 @@ struct CalendarWidgetEntryView: View {
         .containerBackground(backgroundColor, for: .widget)
     }
 
-    // MARK: - 中尺寸：今天 + 未来 6 天
-
-    private var mediumView: some View {
+    /// 点小组件某天打开 App 并跳到那天：chinesecalendar://年/月/日。
+    private func deepLink(for date: Date) -> URL {
         let g = WidgetLunarHelper.gregorian
-        let today = entry.date
-        let days = (0..<7).compactMap { g.date(byAdding: .day, value: $0, to: today) }
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(g.component(.year, from: today))年\(g.component(.month, from: today))月")
-                    .font(.headline)
-                    .foregroundStyle(primaryText)
-                Spacer()
-                Text(WidgetLunarHelper.lunarDateString(for: today))
-                    .font(.subheadline)
-                    .foregroundStyle(secondaryText)
-            }
-            HStack(spacing: 0) {
-                ForEach(days, id: \.self) { day in
-                    VStack(spacing: 2) {
-                        Text(WidgetLunarHelper.weekdayShortName(for: day))
-                            .font(.caption)
-                            .foregroundStyle(secondaryText)
-                        Text("\(g.component(.day, from: day))")
-                            .font(.headline)
-                            .fontWeight(g.isDateInToday(day) ? .bold : .regular)
-                            .foregroundStyle(g.isDateInToday(day) ? accentText : primaryText)
-                        Text(WidgetLunarHelper.festival(for: day) ?? WidgetLunarHelper.lunarShortString(for: day))
-                            .font(.caption2)
-                            .lineLimit(1)
-                            .foregroundStyle(WidgetLunarHelper.festival(for: day) != nil ? accentText : secondaryText)
-                        if WidgetLunarHelper.isRestDay(day) {
-                            Text("休")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(accentText)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            if let festival = WidgetLunarHelper.festival(for: today) {
-                Text("今天 · \(festival)")
-                    .font(.caption)
-                    .foregroundStyle(accentText)
-            } else {
-                Text("\(WidgetLunarHelper.stemBranchYear(for: today)) · \(WidgetLunarHelper.zodiac(for: today))年")
-                    .font(.caption)
-                    .foregroundStyle(secondaryText)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding()
-        .containerBackground(backgroundColor, for: .widget)
+        let y = g.component(.year, from: date)
+        let m = g.component(.month, from: date)
+        let d = g.component(.day, from: date)
+        return URL(string: "chinesecalendar://\(y)/\(m)/\(d)")!
     }
 }
 
@@ -164,7 +199,7 @@ struct CalendarWidget: Widget {
             CalendarWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("中国日历")
-        .description("今天的公历、农历、生肖和节日。")
+        .description("将农历和节假日添加到桌面。")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
