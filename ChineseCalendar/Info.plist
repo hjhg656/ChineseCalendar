@@ -22,6 +22,54 @@
 	<string>读取系统日历里的日程，在日历上显示，方便你一天看全。</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>读取提醒事项里当天到期的提醒，在日期详情里显示。</string>
+	<key>UIStatusBarHidden</key>
+	<true/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.example.ChineseCalendar.copyToday</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>复制今天</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeConfirmation</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.example.ChineseCalendar.showToday</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>查看今天</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeConfirmation</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.example.ChineseCalendar.updatePush</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>更新节日推送</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeConfirmation</string>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.example.ChineseCalendar</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>chinesecalendar</string>
+			</array>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>
