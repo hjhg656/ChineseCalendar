@@ -10,7 +10,7 @@ import UIKit
 /// 做后备，App 和小组件就各用各的默认值，小组件本身不会坏。
 ///
 /// 设置键按小历的 AppConfigs 结构来：颜色 9 项（各有深色版）、
-/// 尺寸 4 项（滑杆）、开关与值若干。颜色存 16 进制字符串，如 "#E5484D"。
+/// 尺寸 4 项（滑杆）、开关与值若干。颜色存 16 进制字符串，如 "#EA545D"。
 enum AppSettings {
 
     static let groupID = "group.com.example.ChineseCalendar"
@@ -28,16 +28,33 @@ enum AppSettings {
     }
 
     static let colorSettings: [AppColorSetting] = [
-        AppColorSetting(id: "appThemeColor", name: "主题背景", defaultHex: "#E5484D"),
+        AppColorSetting(id: "appThemeColor", name: "主题背景", defaultHex: "#EA545D"),
         AppColorSetting(id: "widgetBGColor", name: "通知中心背景", defaultHex: "#FFFFFF"),
-        AppColorSetting(id: "calendarGridColor", name: "一般日期", defaultHex: "#333333"),
-        AppColorSetting(id: "calendarWeekendColor", name: "周末日期", defaultHex: "#D64541"),
-        AppColorSetting(id: "calendarHolidayColor", name: "节日日期", defaultHex: "#5B7C99"),
-        AppColorSetting(id: "calendarTodayColor", name: "当前日期", defaultHex: "#E5484D"),
-        AppColorSetting(id: "calendarEventColor", name: "系统事件", defaultHex: "#3B82F6"),
+        AppColorSetting(id: "calendarGridColor", name: "一般日期", defaultHex: "#404040"),
+        AppColorSetting(id: "calendarWeekendColor", name: "周末日期", defaultHex: "#404040"),
+        AppColorSetting(id: "calendarHolidayColor", name: "节日日期", defaultHex: "#708090"),
+        AppColorSetting(id: "calendarTodayColor", name: "当前日期", defaultHex: "#EA545D"),
+        AppColorSetting(id: "calendarEventColor", name: "系统事件", defaultHex: "#0EA5E9"),
         AppColorSetting(id: "calendarWorkColor", name: "加班日期", defaultHex: "#E67E22"),
-        AppColorSetting(id: "calendarFreeColor", name: "休假日期", defaultHex: "#E5484D"),
+        AppColorSetting(id: "calendarFreeColor", name: "休假日期", defaultHex: "#EA545D"),
     ]
+
+    /// 实测色（2026-11-17 对着小历真机截图逐像素取色，1320×2868，pt = px/3）：
+    /// 标题/数字 #404040，副行（农历小字/星期头）#A6A6A6，今天红圆 #EA545D，
+    /// 节日蓝灰 #708090，日详情蓝标签 #1070C0，事件蓝点 #0EA5E9。
+    /// ink / sublineGrey 是深色自适应的（深色下用白 / 系统次级灰），其余取自上面的设置项。
+    static let ink = Color(UIColor { $0.userInterfaceStyle == .dark ? .white : UIColor(red: 0.25, green: 0.25, blue: 0.25, alpha: 1) })
+    static let sublineGrey = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.56, green: 0.56, blue: 0.58, alpha: 1) : UIColor(red: 0.65, green: 0.65, blue: 0.65, alpha: 1) })
+    static let tagBlue = Color(hex: "1070C0")
+    static let measuredRed = Color(hex: "EA545D")
+
+    /// 实测字号（同上）：标题 23，星期头 14，日期数字 20，副行 10，今天红圆直径 36，行距 42。
+    static let titleFontSize: CGFloat = 23
+    static let weekdayFontSize: CGFloat = 14
+    static let dayNumberFontSize: CGFloat = 20
+    static let sublineFontSize: CGFloat = 10
+    static let todayCircleSize: CGFloat = 36
+    static let dayCellHeight: CGFloat = 42
 
     /// 读颜色的 16 进制值；深色模式读深色版，没存过就用浅色版的值。
     static func colorHex(forKey key: String, colorScheme: ColorScheme) -> String {
