@@ -27,9 +27,6 @@ struct SettingsView: View {
     @AppStorage(AppSettings.shouldShowSubTitleKey, store: AppSettings.sharedDefaults) private var showSubTitle = true
     @AppStorage(AppSettings.enableCloudKey, store: AppSettings.sharedDefaults) private var enableCloud = false
 
-    @AppStorage(AppSettings.widgetBackgroundKey, store: AppSettings.sharedDefaults) private var widgetBackground = AppSettings.widgetBackgroundTheme
-    @AppStorage(AppSettings.widgetOpacityKey, store: AppSettings.sharedDefaults) private var widgetOpacity = 1.0
-
     @ObservedObject var eventStore: EventStore
     var initialSection: String = "color"
 
@@ -117,31 +114,17 @@ struct SettingsView: View {
                     .id("style")
 
                     // MARK: - 小组件
+                    // 小组件的颜色不在 App 里改：App 里的设置传不到小组件，
+                    // 因为免费签名没有 App Groups 权限（需要付费开发者账号），
+                    // 这是 iOS 的限制。小组件用自己的配置：桌面长按小组件 →
+                    // 编辑小组件，可以选透明还是主题色、换主题色、调不透明度。
                     Section("小组件") {
-                        Picker("小组件背景", selection: $widgetBackground) {
-                            Text("透明").tag(AppSettings.widgetBackgroundTransparent)
-                            Text("主题色").tag(AppSettings.widgetBackgroundTheme)
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: widgetBackground) { _, _ in
-                            WidgetCenter.shared.reloadAllTimelines()
-                        }
-                        if widgetBackground == AppSettings.widgetBackgroundTheme {
-                            HStack {
-                                Text("不透明度")
-                                Slider(value: $widgetOpacity, in: 0.3...1.0, step: 0.05)
-                                Text("\(Int(widgetOpacity * 100))%")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 40, alignment: .trailing)
-                            }
-                            .onChange(of: widgetOpacity) { _, _ in
-                                WidgetCenter.shared.reloadAllTimelines()
-                            }
-                        }
-                        Text("透明是用 clear 背景实现的，主屏幕壁纸会透出来。改完后小组件会自动刷新。这个设置靠 App Groups 同步到小组件；如果签名时没带这个权限，小组件会保持默认的主题色背景。")
+                        Text("小组件的背景和主题色在桌面上改：长按小组件 → 编辑小组件，可以选透明还是主题色、换主题色、调不透明度，改完小组件自己刷新。App 里的设置传不到小组件（免费签名没有 App Groups 权限，需要付费开发者账号），所以这里不放改颜色的开关。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                        Button("刷新小组件") {
+                            WidgetCenter.shared.reloadAllTimelines()
+                        }
                     }
 
                     // MARK: - 其他（5 行）
@@ -431,7 +414,7 @@ struct AboutView: View {
                 HStack {
                     Text("版本")
                     Spacer()
-                    Text("2.0")
+                    Text("2.5")
                         .foregroundStyle(.secondary)
                 }
                 Text("中国日历：按小历的界面与功能重建的中国农历日历。")
