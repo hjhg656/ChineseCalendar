@@ -9,7 +9,7 @@ import UIKit
 /// （比如有的第三方签名工具没注入），读到的就是 nil，这时用 .standard
 /// 做后备，App 和小组件就各用各的默认值，小组件本身不会坏。
 ///
-/// 设置键按小历的 AppConfigs 结构来：颜色 9 项（各有深色版）、
+/// 设置键按小历的 AppConfigs 结构来：颜色 8 项（各有深色版）、
 /// 尺寸 4 项（滑杆）、开关与值若干。颜色存 16 进制字符串，如 "#EA545D"。
 enum AppSettings {
 
@@ -19,7 +19,9 @@ enum AppSettings {
         UserDefaults(suiteName: groupID) ?? .standard
     }
 
-    // MARK: - 颜色（小历设置面板“颜色”组的顺序）
+    // MARK: - 颜色（小历设置面板“颜色”组的顺序；“通知中心背景”不在这里——
+    // 小组件的颜色现在由小组件自己的配置管（桌面长按 → 编辑小组件），App 里的设置
+    // 传不到小组件，因为免费签名没有 App Groups 权限）
 
     struct AppColorSetting: Identifiable {
         let id: String          // UserDefaults 键（浅色）；深色版是 id + "Dark"
@@ -29,7 +31,6 @@ enum AppSettings {
 
     static let colorSettings: [AppColorSetting] = [
         AppColorSetting(id: "appThemeColor", name: "主题背景", defaultHex: "#EA545D"),
-        AppColorSetting(id: "widgetBGColor", name: "通知中心背景", defaultHex: "#FFFFFF"),
         AppColorSetting(id: "calendarGridColor", name: "一般日期", defaultHex: "#404040"),
         AppColorSetting(id: "calendarWeekendColor", name: "周末日期", defaultHex: "#404040"),
         AppColorSetting(id: "calendarHolidayColor", name: "节日日期", defaultHex: "#708090"),
@@ -102,29 +103,9 @@ enum AppSettings {
     static let weekStartDayKey = "weekStartDay"   // 0 = 周日，1 = 周一，6 = 周六
     static let pushTimeKey = "pushTime"           // 如 "08:00"
 
-    // MARK: - 小组件背景（沿用 v1.1 的透明方案）
-
-    static let widgetBackgroundKey = "widgetBackground"
-    static let widgetOpacityKey = "widgetOpacity"
-
-    static let widgetBackgroundTransparent = "transparent"
-    static let widgetBackgroundTheme = "theme"
-
-    static func readWidgetBackground() -> String {
-        let value = sharedDefaults.string(forKey: widgetBackgroundKey)
-        return (value == widgetBackgroundTransparent) ? widgetBackgroundTransparent : widgetBackgroundTheme
-    }
-
-    static func readWidgetOpacity() -> Double {
-        let value = sharedDefaults.double(forKey: widgetOpacityKey)
-        // 没存过时 double 返回 0，要当成默认值 1.0。
-        return value <= 0 ? 1.0 : min(max(value, 0.3), 1.0)
-    }
-
-    /// 小组件用的主题色（appThemeColor）。
-    static func readThemeColor() -> Color {
-        color(forKey: "appThemeColor", colorScheme: .light)
-    }
+    // 注意：小组件的背景/主题色/不透明度以前存在这里（App Groups 共享设置），
+    // 但免费签名没有 App Groups 权限，小组件读不到 App 的设置，所以 2.5 起
+    // 小组件改用自己的配置（桌面长按 → 编辑小组件），这里不再留这些键。
 
     static func readWeekStartDay() -> Int {
         let value = sharedDefaults.integer(forKey: weekStartDayKey)
@@ -147,8 +128,7 @@ enum AppSettings {
                  showWeekKey, useSingleLineModeKey, hideOtherDaysKey, hideHolidaysKey,
                  hideSystemEventsKey, useSysEvtColorKey, silentModeKey, todayModeKey,
                  useBlackFontKey, receivePushKey, displayCompletedRemindersKey,
-                 shouldShowSubTitleKey, enableCloudKey, weekStartDayKey, pushTimeKey,
-                 widgetBackgroundKey, widgetOpacityKey]
+                 shouldShowSubTitleKey, enableCloudKey, weekStartDayKey, pushTimeKey]
         for key in keys {
             sharedDefaults.removeObject(forKey: key)
         }
