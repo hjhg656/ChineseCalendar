@@ -34,7 +34,29 @@ struct SettingsView: View {
     @State private var showRestoreConfirm = false
     @State private var showClearDone = false
     @State private var showPushUpdate = false
+    @State private var pushUpdateMessage = ""
+    @State private var isSyncingHolidays = false
     @State private var showRateNote = false
+
+    /// 已同步的年份说明（没同步过就提示内置表的范围）。
+    private var holidayCacheNote: String {
+        let years = HolidayAPIService.cachedYearNumbers()
+        if years.isEmpty {
+            return "内置节假日表覆盖 2025–2027 年；2028 年的安排公布后点上面的按钮同步。"
+        }
+        return "已从接口同步：" + years.map { "\($0) 年" }.joined(separator: "、") + "。内置表覆盖 2025–2027 年。"
+    }
+
+    /// “更新节日推送”：真的去接口拉下一年的放假安排（2.6 起，不再只是弹提示）。
+    private func syncHolidays() {
+        guard !isSyncingHolidays else { return }
+        isSyncingHolidays = true
+        Task {
+            pushUpdateMessage = await HolidayAPIService.syncNextYear()
+            isSyncingHolidays = false
+            showPushUpdate = true
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -100,9 +122,18 @@ struct SettingsView: View {
                         NavigationLink("节假日推送时间") {
                             PushTimeView()
                         }
-                        Button("更新节日推送") {
-                            showPushUpdate = true
+                        Button {
+                            syncHolidays()
+                        } label: {
+                            HStack {
+                                Text("更新节日推送")
+                                if isSyncingHolidays { ProgressView() }
+                            }
                         }
+                        .disabled(isSyncingHolidays)
+                        Text(holidayCacheNote)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         Toggle("开启 iCloud 同步", isOn: $enableCloud)
                             .disabled(true)
                         Text("iCloud 同步需要苹果付费开发者账号和 CloudKit 容器，这个版本暂不支持，开关留在这里。")
@@ -184,7 +215,7 @@ struct SettingsView: View {
             .alert("更新节日推送", isPresented: $showPushUpdate) {
                 Button("知道了", role: .cancel) { }
             } message: {
-                Text("内置节假日表已是最新，覆盖 2025–2027 年（按国务院办公厅放假通知）。2028 年的安排公布后需要更新 App 里的表。")
+                Text(pushUpdateMessage)
             }
             .alert("谢谢", isPresented: $showRateNote) {
                 Button("知道了", role: .cancel) { }
@@ -414,7 +445,7 @@ struct AboutView: View {
                 HStack {
                     Text("版本")
                     Spacer()
-                    Text("2.5")
+                    Text("2.6")
                         .foregroundStyle(.secondary)
                 }
                 Text("中国日历：按小历的界面与功能重建的中国农历日历。")
