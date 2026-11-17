@@ -203,7 +203,9 @@ enum HolidayAPIService {
         }
         var days: [HolidayAPIDay] = []
         for key in dates {
-            guard let typeEntry = decoded.type?[key] else { continue }
+            // type 字典的值本身也是可选的（JSON 里 null 占位），所以要解两层：
+            // 先解字典/下标的外层，再解值本身。
+            guard let typeEntryOpt = decoded.type?[key], let typeEntry = typeEntryOpt else { continue }
             let holidayEntry = decoded.holiday?[key] ?? nil
             switch typeEntry.type {
             case 2, 3:
