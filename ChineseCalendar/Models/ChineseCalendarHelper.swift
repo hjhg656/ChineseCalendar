@@ -313,6 +313,8 @@ enum ChineseCalendarHelper {
 
     /// 某天是不是放假日或调休上班日。表里没有的年份返回 nil。
     static func statutoryDay(for date: Date) -> StatutoryDay? {
+        // API 缓存优先（2.6 起）：已同步的年份以接口数据为准，没同步的走内置表。
+        if let override = HolidayAPIService.statutoryDayOverride(for: date) { return override }
         let comps = gregorian.dateComponents([.year, .month, .day], from: date)
         guard let year = comps.year, let month = comps.month, let day = comps.day,
               let holidays = statutoryHolidays[year] else { return nil }
