@@ -5,6 +5,12 @@ import Combine
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// 动效统一走这两个：减弱动态效果打开时全部关掉（iOS 规范：提供一条同样可用的无动画路径）。
+    /// 翻月/点日期/选年月用 0.3s，滑杆与提示用 0.25s——不同距离的过渡不用同一个时长。
+    private var slideAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.3) }
+    private var quickAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.25) }
 
     @AppStorage(AppSettings.showWeekKey, store: AppSettings.sharedDefaults) private var showWeek = false
     @AppStorage(AppSettings.useSingleLineModeKey, store: AppSettings.sharedDefaults) private var weekOnly = false
@@ -73,14 +79,14 @@ struct ContentView: View {
                 HStack(spacing: 0) {
                     if showWeek {
                         Text("周")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: AppSettings.weekdayFontSize))
+                            .foregroundStyle(AppSettings.sublineGrey)
                             .frame(width: 36)
                     }
                     ForEach(ChineseCalendarHelper.weekdaySymbols(), id: \.self) { w in
                         Text(w)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: AppSettings.weekdayFontSize))
+                            .foregroundStyle(AppSettings.sublineGrey)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -116,11 +122,11 @@ struct ContentView: View {
         .statusBar(hidden: true)
         .tint(themeColor)
         // 小历的动效：周视图收起/展开、字号与面板尺寸变化都平滑过渡。
-        .animation(.easeInOut(duration: 0.3), value: weekOnly)
-        .animation(.easeInOut(duration: 0.25), value: fontScale)
-        .animation(.easeInOut(duration: 0.25), value: widthScale)
-        .animation(.easeInOut(duration: 0.25), value: heightScale)
-        .animation(.easeInOut(duration: 0.25), value: positionScale)
+        .animation(slideAnimation, value: weekOnly)
+        .animation(quickAnimation, value: fontScale)
+        .animation(quickAnimation, value: widthScale)
+        .animation(quickAnimation, value: heightScale)
+        .animation(quickAnimation, value: positionScale)
         .sheet(isPresented: $showSettings, onDismiss: {
             eventStore.loadEvents(for: displayedDate)
             eventStore.loadReminderDays(for: displayedDate)
@@ -149,7 +155,7 @@ struct ContentView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: toast)
+        .animation(quickAnimation, value: toast)
         .onAppear {
             eventStore.refreshStatus()
             eventStore.loadEvents(for: displayedDate)
@@ -162,7 +168,7 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ChineseCalendarDeepLink"))) { note in
             if let date = note.userInfo?["date"] as? Date {
                 monthDirection = date >= displayedDate ? 1 : -1
-                withAnimation(.easeInOut(duration: 0.3)) {
+                withAnimation(slideAnimation) {
                     displayedDate = date
                     selectedDate = date
                     detailDate = date
@@ -191,13 +197,14 @@ struct ContentView: View {
             arrowButton(systemName: "chevron.left") { step(by: -1) } longPress: { stepYear(by: -1) }
             Spacer()
             Text("\(ChineseCalendarHelper.monthTitle(for: displayedDate)) · \(ChineseCalendarHelper.weekOfYear(for: displayedDate))")
-                .font(.title2)
+                .font(.system(size: AppSettings.titleFontSize))
                 .fontWeight(.bold)
+                .foregroundStyle(AppSettings.ink)
                 .id(gridKey)
                 .transition(.opacity)
                 .gesture(
                     TapGesture(count: 2).onEnded { goToday() }
-                        .exclusively(before: TapGesture(count: 1).onEnded { withAnimation(.easeInOut(duration: 0.3)) { showDatePicker = true } })
+                        .exclusively(before: TapGesture(count: 1).onEnded { withAnimation(slideAnimation) { showDatePicker = true } })
                 )
             Spacer()
             arrowButton(systemName: "chevron.right") { step(by: 1) } longPress: { stepYear(by: 1) }
@@ -219,7 +226,7 @@ struct ContentView: View {
     private func step(by value: Int) {
         playClick()
         monthDirection = value > 0 ? 1 : -1
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(slideAnimation) {
             if weekOnly {
                 displayedDate = ChineseCalendarHelper.addingDay(value * 7, to: displayedDate)
             } else {
@@ -231,14 +238,14 @@ struct ContentView: View {
     private func stepYear(by value: Int) {
         playClick()
         monthDirection = value > 0 ? 1 : -1
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(slideAnimation) {
             displayedDate = ChineseCalendarHelper.addingMonth(value * 12, to: displayedDate)
         }
     }
 
     private func goToday() {
         monthDirection = Date() >= displayedDate ? 1 : -1
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(slideAnimation) {
             displayedDate = Date()
             selectedDate = Date()
             detailDate = nil
@@ -277,14 +284,14 @@ struct ContentView: View {
         .transition(.asymmetric(
             insertion: .move(edge: monthDirection > 0 ? .bottom : .top).combined(with: .opacity),
             removal: .move(edge: monthDirection > 0 ? .top : .bottom).combined(with: .opacity)))
-        .animation(.easeInOut(duration: 0.3), value: detailDate)
+        .animation(slideAnimation, value: detailDate)
     }
 
     private func dayCell(_ day: Date) -> some View {
         let info = ChineseCalendarHelper.dayInfo(for: day)
         let inMonth = ChineseCalendarHelper.month(of: day) == ChineseCalendarHelper.month(of: displayedDate)
         if hideOtherDays && !inMonth && !weekOnly {
-            return AnyView(Color.clear.frame(maxWidth: .infinity, minHeight: 52 * heightScale))
+            return AnyView(Color.clear.frame(maxWidth: .infinity, minHeight: AppSettings.dayCellHeight * heightScale))
         }
         let isToday = ChineseCalendarHelper.isToday(day)
         let isSelected = detailDate != nil && ChineseCalendarHelper.isSameDay(day, selectedDate)
@@ -293,9 +300,9 @@ struct ContentView: View {
         // 数字色：周末用周末色，平日用一般日期色，非本月淡显。
         var numberColor: Color = info.isWeekend ? weekendColor : gridColor
         if !inMonth { numberColor = numberColor.opacity(0.4) }
-        // 副行：有节日时用节日色，否则同数字色。
-        var subColor: Color = info.hasHoliday ? holidayColor : numberColor
-        if hideHolidays { subColor = numberColor }
+        // 副行：有节日时用节日色，农历小字用实测浅灰（小历的副行就是浅灰，不是深色）。
+        var subColor: Color = info.hasHoliday ? holidayColor : AppSettings.sublineGrey
+        if hideHolidays { subColor = AppSettings.sublineGrey }
         let subText: String
         if !showSubTitle {
             subText = ""
@@ -318,11 +325,11 @@ struct ContentView: View {
                 playClick()
                 // 再点一次已打开的那天就收起详情（小历没有关闭按钮）。
                 if detailDate != nil && ChineseCalendarHelper.isSameDay(day, selectedDate) {
-                    withAnimation(.easeInOut(duration: 0.3)) { detailDate = nil }
+                    withAnimation(slideAnimation) { detailDate = nil }
                     return
                 }
                 if !inMonth && !weekOnly { monthDirection = day > displayedDate ? 1 : -1 }
-                withAnimation(.easeInOut(duration: 0.3)) {
+                withAnimation(slideAnimation) {
                     selectedDate = day
                     if !inMonth && !weekOnly { displayedDate = day }
                     detailDate = day
@@ -331,9 +338,9 @@ struct ContentView: View {
             } label: {
                 VStack(spacing: 1) {
                     Text("\(ChineseCalendarHelper.gregorian.component(.day, from: day))")
-                        .font(.system(size: 17 * fontScale, weight: (isToday || isSelected || useBlackFont) ? .bold : .regular))
+                        .font(.system(size: AppSettings.dayNumberFontSize * fontScale, weight: (isToday || isSelected || useBlackFont) ? .bold : .regular))
                         .foregroundStyle(isToday && !isDetail ? .white : (isSelected ? .black : numberColor))
-                        .frame(width: 30, height: 30)
+                        .frame(width: AppSettings.todayCircleSize, height: AppSettings.todayCircleSize)
                         .background(
                             isToday
                             ? (isDetail ? todayColor.opacity(0.3) : todayColor)
@@ -342,7 +349,7 @@ struct ContentView: View {
                         )
                     if showSubTitle {
                         Text(subText)
-                            .font(.system(size: 10 * fontScale, weight: .light))
+                            .font(.system(size: AppSettings.sublineFontSize * fontScale, weight: .light))
                             .lineLimit(1)
                             .foregroundStyle(subColor)
                     }
@@ -363,7 +370,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 52 * heightScale)
+                .frame(maxWidth: .infinity, minHeight: AppSettings.dayCellHeight * heightScale)
                 .overlay(alignment: .topTrailing) {
                     if !hideHolidays {
                         if info.worktime == 2 {
@@ -401,9 +408,9 @@ struct ContentView: View {
             HStack {
                 Image(systemName: icon)
                     .frame(width: 28)
-                    .foregroundStyle(themeColor)
+                    .foregroundStyle(.secondary)
                 Text(title)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(AppSettings.ink)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption)
@@ -452,6 +459,8 @@ struct DayDetailView: View {
     let onAddEvent: () -> Void
     @ObservedObject var eventStore: EventStore
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var quickAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.25) }
 
     private var info: ChineseCalendarHelper.DayInfo { ChineseCalendarHelper.dayInfo(for: date) }
 
@@ -472,7 +481,7 @@ struct DayDetailView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 5))
+                        .background(AppSettings.tagBlue, in: RoundedRectangle(cornerRadius: 5))
                     Text("+ 添加事件")
                         .font(.subheadline)
                     Spacer()
@@ -487,7 +496,7 @@ struct DayDetailView: View {
             Spacer()
         }
         .padding()
-        .animation(.easeInOut(duration: 0.25), value: date)
+        .animation(quickAnimation, value: date)
     }
 
     private var hasEventList: Bool {
@@ -503,7 +512,7 @@ struct DayDetailView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.blue, in: RoundedRectangle(cornerRadius: 5))
+                    .background(AppSettings.tagBlue, in: RoundedRectangle(cornerRadius: 5))
                 Text(text)
                     .font(.subheadline)
                 Spacer()
@@ -517,7 +526,7 @@ struct DayDetailView: View {
             // 节日
             ForEach(info.detailNames, id: \.self) { name in
                 HStack {
-                    Circle().fill(Color.red).frame(width: 6, height: 6)
+                    Circle().fill(AppSettings.measuredRed).frame(width: 6, height: 6)
                     Text(name).font(.subheadline)
                 }
             }
@@ -526,7 +535,7 @@ struct DayDetailView: View {
                 ForEach(eventStore.events(on: date), id: \.eventIdentifier) { event in
                     HStack {
                         Circle()
-                            .fill(event.calendar.cgColor.map { Color(cgColor: $0) } ?? Color.blue)
+                            .fill(event.calendar.cgColor.map { Color(cgColor: $0) } ?? AppSettings.tagBlue)
                             .frame(width: 6, height: 6)
                         Text(EventStore.timeText(for: event))
                             .font(.footnote)
@@ -569,6 +578,10 @@ struct YearMonthPickerView: View {
     @Binding var displayedDate: Date
     @Binding var selectedDate: Date
     @Binding var isPresented: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+    private var slideAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.3) }
+    private var themeColor: Color { AppSettings.color(forKey: "appThemeColor", colorScheme: colorScheme) }
 
     @State private var pickedYear: Int
     @State private var pickedMonth: Int
@@ -596,12 +609,12 @@ struct YearMonthPickerView: View {
                             VStack(spacing: 2) {
                                 Text("\(year)")
                                     .font(.headline)
-                                    .foregroundStyle(pickedYear == year ? .red : .primary)
-                                // 当前年下方小红三角
+                                    .foregroundStyle(AppSettings.ink)
+                                // 当前年下方小红三角（截图里 2026 的字是深色的，红三角标的是“今年”）
                                 if year == ChineseCalendarHelper.gregorian.component(.year, from: Date()) {
                                     Image(systemName: "triangle.fill")
                                         .font(.system(size: 7))
-                                        .foregroundStyle(.red)
+                                        .foregroundStyle(themeColor)
                                 } else {
                                     Color.clear.frame(height: 7)
                                 }
@@ -612,7 +625,7 @@ struct YearMonthPickerView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .animation(.easeInOut(duration: 0.2), value: pickedYear)
+                .animation(slideAnimation, value: pickedYear)
                 // 月份网格（2 列）
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
                     ForEach(1...12, id: \.self) { month in
@@ -621,14 +634,14 @@ struct YearMonthPickerView: View {
                         } label: {
                             Text("\(month)月")
                                 .font(.headline)
-                                .foregroundStyle(pickedMonth == month ? .white : .primary)
+                                .foregroundStyle(pickedMonth == month ? .white : AppSettings.ink)
                                 .frame(width: 52, height: 52)
-                                .background(pickedMonth == month ? Color.red : Color.clear, in: Circle())
+                                .background(pickedMonth == month ? themeColor : Color.clear, in: Circle())
                         }
                         .buttonStyle(.plain)
                     }
                 }
-                .animation(.easeInOut(duration: 0.2), value: pickedMonth)
+                .animation(slideAnimation, value: pickedMonth)
             }
             HStack {
                 Spacer()
@@ -636,7 +649,7 @@ struct YearMonthPickerView: View {
                     .font(.headline)
                 Button("确定") {
                     if let date = ChineseCalendarHelper.gregorian.date(from: DateComponents(year: pickedYear, month: pickedMonth, day: 1)) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                        withAnimation(slideAnimation) {
                             displayedDate = date
                             selectedDate = date
                         }
@@ -646,7 +659,7 @@ struct YearMonthPickerView: View {
                 .font(.headline)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.red, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(themeColor, lineWidth: 1))
             }
         }
         .padding()
