@@ -283,7 +283,7 @@ struct CalendarWidget: Widget {
         AppIntentConfiguration(kind: kind, intent: WidgetConfigIntent.self, provider: Provider()) { entry in
             CalendarWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("中国日历")
+        .configurationDisplayName("历历在目")
         .description("将农历和节假日添加到桌面。")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
