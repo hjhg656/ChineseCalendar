@@ -59,7 +59,7 @@ enum WidgetThemeColorOption: String, AppEnum {
 
 struct WidgetConfigIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource { "中国日历设置" }
-    static var description: IntentDescription { "设置小组件的背景和主题色。长按桌面小组件 → 编辑小组件即可修改。" }
+    static var description: IntentDescription { "设置小组件的背景和主题色。" }
 
     @Parameter(title: "背景", default: .theme)
     var background: WidgetBackgroundOption
@@ -67,7 +67,6 @@ struct WidgetConfigIntent: WidgetConfigurationIntent {
     @Parameter(title: "主题色", default: .red)
     var themeColor: WidgetThemeColorOption
 
-    /// 0.3～1.0，默认 1.0。系统会在编辑界面给出数字输入。
     @Parameter(title: "不透明度", default: 1.0)
     var opacity: Double
 }
@@ -134,16 +133,11 @@ struct CalendarWidgetEntryView: View {
     }
 
     var body: some View {
-        Group {
-            switch family {
-            case .systemMedium:
-                mediumView
-            case .systemSmall:
-                smallView
-            default:
-                // 兜底：未知 family 也画小尺寸，避免 body 空导致系统显示占位图
-                smallView
-            }
+        switch family {
+        case .systemMedium:
+            mediumView
+        default:
+            smallView
         }
     }
 
@@ -171,7 +165,7 @@ struct CalendarWidgetEntryView: View {
             Text(WidgetLunarHelper.weekdayShortName(for: date))
                 .font(.subheadline)
                 .foregroundStyle(secondaryText)
-            Spacer(minLength: 0)
+            Spacer()
             Text("\(g.component(.day, from: date))")
                 .font(.system(size: 44, weight: .bold))
                 .foregroundStyle(primaryText)
@@ -255,7 +249,7 @@ struct CalendarWidgetEntryView: View {
                     }
                 }
             }
-            Spacer(minLength: 0)
+            Spacer()
             // 底部信息行：红竖线 + 日期/周/干支/农历
             HStack(spacing: 8) {
                 Rectangle()
@@ -278,7 +272,7 @@ struct CalendarWidgetEntryView: View {
         let y = g.component(.year, from: date)
         let m = g.component(.month, from: date)
         let d = g.component(.day, from: date)
-        return URL(string: "chinesecalendar://\(y)/\(m)/\(d)") ?? URL(string: "chinesecalendar://")!
+        return URL(string: "chinesecalendar://\(y)/\(m)/\(d)")!
     }
 }
 
