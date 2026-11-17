@@ -172,10 +172,10 @@ struct SettingsView: View {
                                 UIApplication.shared.open(url)
                             }
                         }
-                        Button("赞美中国日历") {
+                        Button("赞美历历在目") {
                             showRateNote = true
                         }
-                        NavigationLink("关于中国日历") {
+                        NavigationLink("关于历历在目") {
                             AboutView()
                         }
                     }
@@ -220,7 +220,7 @@ struct SettingsView: View {
             .alert("谢谢", isPresented: $showRateNote) {
                 Button("知道了", role: .cancel) { }
             } message: {
-                Text("中国日历还没上架 App Store，暂时评不了分，谢谢你的喜欢。")
+                Text("历历在目还没上架 App Store，暂时评不了分，谢谢你的喜欢。")
             }
         }
     }
@@ -445,10 +445,10 @@ struct AboutView: View {
                 HStack {
                     Text("版本")
                     Spacer()
-                    Text("2.6")
+                    Text("2.7")
                         .foregroundStyle(.secondary)
                 }
-                Text("中国日历：按小历的界面与功能重建的中国农历日历。")
+                Text("历历在目：按小历的界面与功能重建的中国农历日历。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -461,12 +461,12 @@ struct AboutView: View {
                     .foregroundStyle(.secondary)
             }
             Section {
-                ShareLink(item: "中国日历 - 小而美的日历", preview: SharePreview("分享中国日历")) {
-                    Label("分享中国日历", systemImage: "square.and.arrow.up")
+                ShareLink(item: "历历在目 - 小而美的日历", preview: SharePreview("分享历历在目")) {
+                    Label("分享历历在目", systemImage: "square.and.arrow.up")
                 }
             }
         }
-        .navigationTitle("关于中国日历")
+        .navigationTitle("关于历历在目")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
