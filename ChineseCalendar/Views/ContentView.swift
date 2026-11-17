@@ -37,16 +37,28 @@ struct ContentView: View {
     @State private var showAddEvent = false
     @State private var showPushUpdate = false
     @State private var toast: String? = nil
+    @State private var didApplyTodayMode = false
     @StateObject private var eventStore = EventStore()
 
-    private var themeColor: Color { AppSettings.color(forKey: "appThemeColor", colorScheme: colorScheme) }
-    private var gridColor: Color { AppSettings.color(forKey: "calendarGridColor", colorScheme: colorScheme) }
-    private var weekendColor: Color { AppSettings.color(forKey: "calendarWeekendColor", colorScheme: colorScheme) }
-    private var holidayColor: Color { AppSettings.color(forKey: "calendarHolidayColor", colorScheme: colorScheme) }
-    private var todayColor: Color { AppSettings.color(forKey: "calendarTodayColor", colorScheme: colorScheme) }
-    private var eventColor: Color { AppSettings.color(forKey: "calendarEventColor", colorScheme: colorScheme) }
-    private var workColor: Color { AppSettings.color(forKey: "calendarWorkColor", colorScheme: colorScheme) }
-    private var freeColor: Color { AppSettings.color(forKey: "calendarFreeColor", colorScheme: colorScheme) }
+    // 颜色：用 @AppStorage 观察，设置里改完立刻刷新（之前是静态读，改完不刷新）。
+    // 深色版（...Dark）没有编辑入口，沿用浅色值，和之前一致。
+    @AppStorage("appThemeColor", store: AppSettings.sharedDefaults) private var themeColorHex = "#EA545D"
+    @AppStorage("calendarGridColor", store: AppSettings.sharedDefaults) private var gridColorHex = "#404040"
+    @AppStorage("calendarWeekendColor", store: AppSettings.sharedDefaults) private var weekendColorHex = "#404040"
+    @AppStorage("calendarHolidayColor", store: AppSettings.sharedDefaults) private var holidayColorHex = "#708090"
+    @AppStorage("calendarTodayColor", store: AppSettings.sharedDefaults) private var todayColorHex = "#EA545D"
+    @AppStorage("calendarEventColor", store: AppSettings.sharedDefaults) private var eventColorHex = "#0EA5E9"
+    @AppStorage("calendarWorkColor", store: AppSettings.sharedDefaults) private var workColorHex = "#E67E22"
+    @AppStorage("calendarFreeColor", store: AppSettings.sharedDefaults) private var freeColorHex = "#EA545D"
+
+    private var themeColor: Color { Color(hex: themeColorHex) }
+    private var gridColor: Color { Color(hex: gridColorHex) }
+    private var weekendColor: Color { Color(hex: weekendColorHex) }
+    private var holidayColor: Color { Color(hex: holidayColorHex) }
+    private var todayColor: Color { Color(hex: todayColorHex) }
+    private var eventColor: Color { Color(hex: eventColorHex) }
+    private var workColor: Color { Color(hex: workColorHex) }
+    private var freeColor: Color { Color(hex: freeColorHex) }
 
     /// 当前要显示的周：只看本周时只显示一周，否则显示整月。
     private var weeks: [[Date]] {
@@ -175,6 +187,11 @@ struct ContentView: View {
             eventStore.loadEvents(for: displayedDate)
             eventStore.loadReminderDays(for: displayedDate)
             Task { await eventStore.loadReminders(for: selectedDate) }
+            // “默认展开今日”：第一次打开就展开今天的日详情（只做一次，之后不打扰）。
+            if todayMode && !didApplyTodayMode {
+                didApplyTodayMode = true
+                detailDate = selectedDate
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ChineseCalendarShortcut"))) { note in
             handleShortcut(note.userInfo?["action"] as? String ?? "")
