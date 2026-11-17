@@ -1,51 +1,136 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
-struct Provider: TimelineProvider {
+/// 小组件自己的配置（2.5 起）：桌面长按小组件 → 编辑小组件。
+/// 以前小组件的颜色存在 App Groups 共享设置里，但免费签名没有 App Groups
+/// 权限，小组件读不到 App 的设置，所以改颜色一直没反应。现在改用系统自带的
+/// 小组件配置（存在小组件自己那边），不需要任何权限，免费签名也能用。
+enum WidgetBackgroundOption: String, AppEnum {
+    case transparent, theme
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation { "小组件背景" }
+    static var caseDisplayRepresentations: [WidgetBackgroundOption: DisplayRepresentation] {
+        [.transparent: "透明", .theme: "主题色"]
+    }
+}
+
+enum WidgetThemeColorOption: String, AppEnum {
+    case red, black, white, orange, yellow, lemon, grassGreen, green, seaBlue, blue, purple, deepPurple, pink, gold
+
+    /// 和 App 里颜色选择器同一套预设。
+    var hex: String {
+        switch self {
+        case .red: return "#EA545D"
+        case .black: return "#000000"
+        case .white: return "#FFFFFF"
+        case .orange: return "#FF9500"
+        case .yellow: return "#FFFF00"
+        case .lemon: return "#A3E635"
+        case .grassGreen: return "#65A30D"
+        case .green: return "#34C759"
+        case .seaBlue: return "#0EA5E9"
+        case .blue: return "#007AFF"
+        case .purple: return "#AF52DE"
+        case .deepPurple: return "#6D28D9"
+        case .pink: return "#EC4899"
+        case .gold: return "#D4AF37"
+        }
+    }
+
+    /// 主题色太浅时（白、黄、柠檬），压在上面的字要用深色，否则白字在浅底上看不清。
+    var isLight: Bool {
+        let h = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var value: UInt64 = 0
+        Scanner(string: h).scanHexInt64(&value)
+        let r = Double((value >> 16) & 0xFF) / 255
+        let g = Double((value >> 8) & 0xFF) / 255
+        let b = Double(value & 0xFF) / 255
+        return 0.299 * r + 0.587 * g + 0.114 * b > 0.6
+    }
+
+    static var typeDisplayRepresentation: TypeDisplayRepresentation { "主题色" }
+    static var caseDisplayRepresentations: [WidgetThemeColorOption: DisplayRepresentation] {
+        [.red: "红色", .black: "黑色", .white: "白色", .orange: "橙色", .yellow: "黄色",
+         .lemon: "柠檬", .grassGreen: "草绿", .green: "绿色", .seaBlue: "海蓝", .blue: "蓝色",
+         .purple: "紫色", .deepPurple: "深紫", .pink: "粉红", .gold: "金色"]
+    }
+}
+
+struct WidgetConfigIntent: WidgetConfigurationIntent {
+    static var title: LocalizedStringResource { "中国日历设置" }
+    static var description: IntentDescription { "设置小组件的背景和主题色。" }
+
+    @Parameter(title: "背景", default: .theme)
+    var background: WidgetBackgroundOption
+
+    @Parameter(title: "主题色", default: .red)
+    var themeColor: WidgetThemeColorOption
+
+    @Parameter(title: "不透明度", default: 1.0)
+    var opacity: Double
+}
+
+struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date())
+        SimpleEntry(date: Date(), config: WidgetConfigIntent())
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> Void) {
-        completion(SimpleEntry(date: Date()))
+    func snapshot(for configuration: WidgetConfigIntent, in context: Context) async -> SimpleEntry {
+        SimpleEntry(date: Date(), config: configuration)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> Void) {
+    func timeline(for configuration: WidgetConfigIntent, in context: Context) async -> Timeline<SimpleEntry> {
         let now = Date()
-        let entry = SimpleEntry(date: now)
+        let entry = SimpleEntry(date: now, config: configuration)
         // 每天午夜后刷新一次。
         let nextMidnight = Calendar.current.startOfDay(for: now).addingTimeInterval(24 * 60 * 60)
-        let timeline = Timeline(entries: [entry], policy: .after(nextMidnight))
-        completion(timeline)
+        return Timeline(entries: [entry], policy: .after(nextMidnight))
     }
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
+    let config: WidgetConfigIntent
 }
 
 struct CalendarWidgetEntryView: View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
 
-    // 小组件背景和主题色从 App 设置里读（App Groups 共享设置）。
+    // 小组件的背景和主题色从自己的配置里读（长按小组件 → 编辑小组件）。
     private var themeColor: Color {
-        AppSettings.readThemeColor()
+        Color(hex: entry.config.themeColor.hex)
     }
 
     private var isTransparent: Bool {
-        AppSettings.readWidgetBackground() == AppSettings.widgetBackgroundTransparent
+        entry.config.background == .transparent
     }
 
     private var backgroundColor: Color {
         if isTransparent { return .clear }
-        return themeColor.opacity(AppSettings.readWidgetOpacity())
+        let opacity = min(max(entry.config.opacity, 0.3), 1.0)
+        return themeColor.opacity(opacity)
     }
 
-    /// 透明背景时用实测文字色（标题/数字 #404040，副行 #A6A6A6）；主题色背景时用白色，红色底上看得清。
-    private var primaryText: Color { isTransparent ? AppSettings.ink : .white }
-    private var secondaryText: Color { isTransparent ? AppSettings.sublineGrey : .white.opacity(0.85) }
-    private var accentText: Color { isTransparent ? themeColor : .white }
+    /// 压在主题色上面的字：主题色深就用白字，太浅就用深色字。
+    private var onThemeColor: Color {
+        entry.config.themeColor.isLight ? AppSettings.ink : .white
+    }
+
+    /// 透明背景时用实测文字色（标题/数字 #404040，副行 #A6A6A6）；主题色背景时，浅主题用深色字、深主题用白色，红色底上看得清。
+    private var primaryText: Color {
+        if isTransparent { return AppSettings.ink }
+        return entry.config.themeColor.isLight ? AppSettings.ink : .white
+    }
+    private var secondaryText: Color {
+        if isTransparent { return AppSettings.sublineGrey }
+        return entry.config.themeColor.isLight ? AppSettings.sublineGrey : .white.opacity(0.85)
+    }
+    private var accentText: Color {
+        if isTransparent { return themeColor }
+        return entry.config.themeColor.isLight ? AppSettings.ink : .white
+    }
 
     var body: some View {
         switch family {
@@ -71,7 +156,7 @@ struct CalendarWidgetEntryView: View {
                     Text("休")
                         .font(.caption2)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(onThemeColor)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
                         .background(themeColor, in: Capsule())
@@ -143,7 +228,7 @@ struct CalendarWidgetEntryView: View {
                             Text("\(g.component(.day, from: day))")
                                 .font(.system(size: AppSettings.dayNumberFontSize))
                                 .fontWeight(isToday ? .bold : .regular)
-                                .foregroundStyle(isToday ? .white : primaryText)
+                                .foregroundStyle(isToday ? onThemeColor : primaryText)
                                 .frame(width: AppSettings.todayCircleSize, height: AppSettings.todayCircleSize)
                                 .background(isToday ? themeColor : Color.clear, in: Circle())
                             Text(info.displayName ?? WidgetLunarHelper.lunarShortString(for: day))
@@ -195,7 +280,7 @@ struct CalendarWidget: Widget {
     let kind: String = "CalendarWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+        AppIntentConfiguration(kind: kind, intent: WidgetConfigIntent.self, provider: Provider()) { entry in
             CalendarWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("中国日历")
@@ -214,11 +299,11 @@ struct CalendarWidgetBundle: WidgetBundle {
 #Preview(as: .systemSmall) {
     CalendarWidget()
 } timeline: {
-    SimpleEntry(date: Date())
+    SimpleEntry(date: Date(), config: WidgetConfigIntent())
 }
 
 #Preview(as: .systemMedium) {
     CalendarWidget()
 } timeline: {
-    SimpleEntry(date: Date())
+    SimpleEntry(date: Date(), config: WidgetConfigIntent())
 }
