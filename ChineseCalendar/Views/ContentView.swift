@@ -22,6 +22,7 @@ struct ContentView: View {
     @AppStorage(AppSettings.positionScaleKey, store: AppSettings.sharedDefaults) private var positionScale = 0.5
 
     @State private var displayedDate: Date = Date()
+    @State private var monthDirection: Int = 1
     @State private var selectedDate: Date = Date()
     @State private var detailDate: Date? = nil
     @State private var showSettings = false
@@ -45,6 +46,14 @@ struct ContentView: View {
     private var weeks: [[Date]] {
         weekOnly ? [ChineseCalendarHelper.weekContaining(displayedDate)]
                  : ChineseCalendarHelper.monthWeeks(for: displayedDate)
+    }
+
+    /// 月历翻页的键：同月（周）不重建，换月（周）才滑进滑出。
+    private var gridKey: String {
+        let g = ChineseCalendarHelper.gregorian
+        let y = g.component(.year, from: displayedDate)
+        if weekOnly { return "\(y)-w\(ChineseCalendarHelper.weekOfYear(for: displayedDate))" }
+        return "\(y)-\(g.component(.month, from: displayedDate))"
     }
 
     var body: some View {
@@ -71,23 +80,23 @@ struct ContentView: View {
             .padding(.vertical, 6)
             .padding(.horizontal, panelPadding)
 
-            // 日历格子
+            // 日详情态：三行蓝标签卡 + 事件列表，月历淡显在下面
             if let detail = detailDate {
-                // 日详情态：三行蓝标签卡 + 事件列表，月历淡显在下面
-                DayDetailView(date: detail, onClose: { detailDate = nil }, onAddEvent: { showAddEvent = true }, eventStore: eventStore)
-                calendarGrid
-                    .padding(.horizontal, panelPadding)
-            } else {
-                calendarGrid
-                    .padding(.horizontal, panelPadding)
-                    .gesture(
-                        DragGesture(minimumDistance: 30)
-                            .onEnded { value in
-                                if value.translation.width < -30 { step(by: 1) }
-                                else if value.translation.width > 30 { step(by: -1) }
-                            }
-                    )
+                DayDetailView(date: detail, onClose: { withAnimation(.easeInOut(duration: 0.3)) { detailDate = nil } }, onAddEvent: { showAddEvent = true }, eventStore: eventStore)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+
+            // 日历格子（单例常驻，换月时上下滑进滑出；日详情打开时淡显）
+            calendarGrid
+                .padding(.horizontal, panelPadding)
+                .gesture(
+                    DragGesture(minimumDistance: 30)
+                        .onEnded { value in
+                            guard detailDate == nil else { return }
+                            if value.translation.width < -30 { step(by: 1) }
+                            else if value.translation.width > 30 { step(by: -1) }
+                        }
+                )
 
             Spacer()
 
@@ -98,6 +107,12 @@ struct ContentView: View {
         }
         .statusBar(hidden: true)
         .tint(themeColor)
+        // 小历的动效：周视图收起/展开、字号与面板尺寸变化都平滑过渡。
+        .animation(.easeInOut(duration: 0.3), value: weekOnly)
+        .animation(.easeInOut(duration: 0.25), value: fontScale)
+        .animation(.easeInOut(duration: 0.25), value: widthScale)
+        .animation(.easeInOut(duration: 0.25), value: heightScale)
+        .animation(.easeInOut(duration: 0.25), value: positionScale)
         .sheet(isPresented: $showSettings, onDismiss: {
             eventStore.loadEvents(for: displayedDate)
             eventStore.loadReminderDays(for: displayedDate)
@@ -126,8 +141,10 @@ struct ContentView: View {
                     .background(Color(.secondarySystemBackground), in: Capsule())
                     .shadow(radius: 4)
                     .padding(.top, 60)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: toast)
         .onAppear {
             eventStore.refreshStatus()
             eventStore.loadEvents(for: displayedDate)
@@ -139,9 +156,12 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ChineseCalendarDeepLink"))) { note in
             if let date = note.userInfo?["date"] as? Date {
-                displayedDate = date
-                selectedDate = date
-                detailDate = date
+                monthDirection = date >= displayedDate ? 1 : -1
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    displayedDate = date
+                    selectedDate = date
+                    detailDate = date
+                }
             }
         }
         .onChange(of: displayedDate) { _, newValue in
@@ -168,6 +188,8 @@ struct ContentView: View {
             Text("\(ChineseCalendarHelper.monthTitle(for: displayedDate)) · \(ChineseCalendarHelper.weekOfYear(for: displayedDate))")
                 .font(.title2)
                 .fontWeight(.bold)
+                .id(gridKey)
+                .transition(.opacity)
                 .gesture(
                     TapGesture(count: 2).onEnded { goToday() }
                         .exclusively(before: TapGesture(count: 1).onEnded { showDatePicker = true })
@@ -191,22 +213,31 @@ struct ContentView: View {
 
     private func step(by value: Int) {
         playClick()
-        if weekOnly {
-            displayedDate = ChineseCalendarHelper.addingDay(value * 7, to: displayedDate)
-        } else {
-            displayedDate = ChineseCalendarHelper.addingMonth(value, to: displayedDate)
+        monthDirection = value > 0 ? 1 : -1
+        withAnimation(.easeInOut(duration: 0.3)) {
+            if weekOnly {
+                displayedDate = ChineseCalendarHelper.addingDay(value * 7, to: displayedDate)
+            } else {
+                displayedDate = ChineseCalendarHelper.addingMonth(value, to: displayedDate)
+            }
         }
     }
 
     private func stepYear(by value: Int) {
         playClick()
-        displayedDate = ChineseCalendarHelper.addingMonth(value * 12, to: displayedDate)
+        monthDirection = value > 0 ? 1 : -1
+        withAnimation(.easeInOut(duration: 0.3)) {
+            displayedDate = ChineseCalendarHelper.addingMonth(value * 12, to: displayedDate)
+        }
     }
 
     private func goToday() {
-        displayedDate = Date()
-        selectedDate = Date()
-        detailDate = nil
+        monthDirection = Date() >= displayedDate ? 1 : -1
+        withAnimation(.easeInOut(duration: 0.3)) {
+            displayedDate = Date()
+            selectedDate = Date()
+            detailDate = nil
+        }
     }
 
     private func playClick() {
@@ -236,6 +267,12 @@ struct ContentView: View {
             }
         }
         .opacity(detailDate == nil ? 1 : 0.45)
+        // 小历的面板上下移动画：往后翻从下面滑进来，往前翻从上面滑进来。
+        .id(gridKey)
+        .transition(.asymmetric(
+            insertion: .move(edge: monthDirection > 0 ? .bottom : .top).combined(with: .opacity),
+            removal: .move(edge: monthDirection > 0 ? .top : .bottom).combined(with: .opacity)))
+        .animation(.easeInOut(duration: 0.3), value: detailDate)
     }
 
     private func dayCell(_ day: Date) -> some View {
@@ -274,9 +311,12 @@ struct ContentView: View {
         return AnyView(
             Button {
                 playClick()
-                selectedDate = day
-                if !inMonth && !weekOnly { displayedDate = day }
-                detailDate = day
+                if !inMonth && !weekOnly { monthDirection = day > displayedDate ? 1 : -1 }
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    selectedDate = day
+                    if !inMonth && !weekOnly { displayedDate = day }
+                    detailDate = day
+                }
                 Task { await eventStore.loadReminders(for: day) }
             } label: {
                 VStack(spacing: 1) {
@@ -445,6 +485,7 @@ struct DayDetailView: View {
             Spacer()
         }
         .padding()
+        .animation(.easeInOut(duration: 0.25), value: date)
     }
 
     private func infoCard(tag: String, text: String, onTap: @escaping () -> Void) -> some View {
@@ -580,6 +621,7 @@ struct YearMonthPickerView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .animation(.easeInOut(duration: 0.2), value: pickedYear)
                 // 月份网格（2 列）
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
                     ForEach(1...12, id: \.self) { month in
@@ -595,6 +637,7 @@ struct YearMonthPickerView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .animation(.easeInOut(duration: 0.2), value: pickedMonth)
             }
             Spacer()
             HStack {
@@ -603,8 +646,10 @@ struct YearMonthPickerView: View {
                     .font(.headline)
                 Button("确定") {
                     if let date = ChineseCalendarHelper.gregorian.date(from: DateComponents(year: pickedYear, month: pickedMonth, day: 1)) {
-                        displayedDate = date
-                        selectedDate = date
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            displayedDate = date
+                            selectedDate = date
+                        }
                     }
                     dismiss()
                 }
