@@ -92,6 +92,12 @@ struct ContentView: View {
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, panelPadding)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if detailDate != nil {
+                        withAnimation(quickAnimation) { detailDate = nil }
+                    }
+                }
 
                 // 日详情态：三行蓝标签卡 + 事件列表，月历淡显在下面
                 if let detail = detailDate {
@@ -112,7 +118,15 @@ struct ContentView: View {
                     )
             }
 
-            Spacer()
+            // 点空白处关掉日详情（原版点哪里都能关）
+            Color.clear
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onTapGesture {
+                    if detailDate != nil {
+                        withAnimation(quickAnimation) { detailDate = nil }
+                    }
+                }
 
             // 底部四行入口
             bottomRows
@@ -493,7 +507,6 @@ struct DayDetailView: View {
             if hasEventList {
                 eventList
             }
-            Spacer()
         }
         .padding()
         .animation(quickAnimation, value: date)
@@ -648,7 +661,12 @@ struct YearMonthPickerView: View {
                 Button("取消") { isPresented = false }
                     .font(.headline)
                 Button("确定") {
-                    if let date = ChineseCalendarHelper.gregorian.date(from: DateComponents(year: pickedYear, month: pickedMonth, day: 1)) {
+                    // 保持当月的几号（不要重置成 1 号，否则标题的周数会跳到月初那周）
+                    let currentDay = ChineseCalendarHelper.gregorian.component(.day, from: displayedDate)
+                    let firstOfMonth = ChineseCalendarHelper.gregorian.date(from: DateComponents(year: pickedYear, month: pickedMonth, day: 1))
+                    let daysInMonth = firstOfMonth.flatMap { ChineseCalendarHelper.gregorian.range(of: .day, in: .month, for: $0)?.count } ?? 31
+                    let day = min(currentDay, daysInMonth)
+                    if let date = ChineseCalendarHelper.gregorian.date(from: DateComponents(year: pickedYear, month: pickedMonth, day: day)) {
                         withAnimation(slideAnimation) {
                             displayedDate = date
                             selectedDate = date
