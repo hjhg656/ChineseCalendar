@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		200000000000000000000020 /* ChineseCalendarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* ChineseCalendarApp.swift */; };
 		200000000000000000000021 /* ChineseCalendarHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* ChineseCalendarHelper.swift */; };
+		200000000000000000000085 /* HolidayAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000075 /* HolidayAPIService.swift */; };
 		200000000000000000000022 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* ContentView.swift */; };
 		200000000000000000000023 /* CalendarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* CalendarWidget.swift */; };
 		200000000000000000000024 /* LunarHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* LunarHelper.swift */; };
@@ -41,6 +42,7 @@
 /* Begin PBXFileReference section */
 		200000000000000000000010 /* ChineseCalendarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChineseCalendarApp.swift; sourceTree = "<group>"; };
 		200000000000000000000011 /* ChineseCalendarHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChineseCalendarHelper.swift; sourceTree = "<group>"; };
+		200000000000000000000075 /* HolidayAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayAPIService.swift; sourceTree = "<group>"; };
 		200000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		200000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		200000000000000000000014 /* ChineseCalendar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChineseCalendar.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -100,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				200000000000000000000011 /* ChineseCalendarHelper.swift */,
+				200000000000000000000075 /* HolidayAPIService.swift */,
 				200000000000000000000070 /* SharedSettings.swift */,
 				200000000000000000000071 /* EventStore.swift */,
 			);
@@ -234,6 +237,7 @@
 			files = (
 				200000000000000000000020 /* ChineseCalendarApp.swift in Sources */,
 				200000000000000000000021 /* ChineseCalendarHelper.swift in Sources */,
+				200000000000000000000085 /* HolidayAPIService.swift in Sources */,
 				200000000000000000000022 /* ContentView.swift in Sources */,
 				200000000000000000000080 /* SharedSettings.swift in Sources */,
 				200000000000000000000081 /* EventStore.swift in Sources */,
@@ -340,7 +344,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.5;
+				MARKETING_VERSION = 2.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.ChineseCalendar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMBED_LIBRARIES_WITH_INSTALL = YES;
@@ -375,7 +379,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.5;
+				MARKETING_VERSION = 2.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.ChineseCalendar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMBED_LIBRARIES_WITH_INSTALL = YES;
@@ -400,7 +404,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.5;
+				MARKETING_VERSION = 2.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.ChineseCalendar.CalendarWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -424,7 +428,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.5;
+				MARKETING_VERSION = 2.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.ChineseCalendar.CalendarWidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
