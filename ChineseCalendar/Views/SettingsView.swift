@@ -445,7 +445,7 @@ struct AboutView: View {
                 HStack {
                     Text("版本")
                     Spacer()
-                    Text("2.7")
+                    Text("2.8")
                         .foregroundStyle(.secondary)
                 }
                 Text("历历在目：按小历的界面与功能重建的中国农历日历。")
