@@ -150,7 +150,7 @@
 			buildPhases = (
 				200000000000000000000030 /* Sources */,
 				200000000000000000000031 /* Frameworks */,
-				200000000000000000032 /* Resources */,
+				200000000000000000000032 /* Resources */,
 				200000000000000000000033 /* Embed App Extensions */,
 			);
 			buildRules = (
