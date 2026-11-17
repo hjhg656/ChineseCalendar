@@ -42,10 +42,10 @@ struct CalendarWidgetEntryView: View {
         return themeColor.opacity(AppSettings.readWidgetOpacity())
     }
 
-    /// 透明背景时用系统默认文字色；主题色背景时用白色，红色底上看得清。
-    private var primaryText: Color { isTransparent ? .primary : .white }
-    private var secondaryText: Color { isTransparent ? .secondary : .white.opacity(0.85) }
-    private var accentText: Color { isTransparent ? .red : .white }
+    /// 透明背景时用实测文字色（标题/数字 #404040，副行 #A6A6A6）；主题色背景时用白色，红色底上看得清。
+    private var primaryText: Color { isTransparent ? AppSettings.ink : .white }
+    private var secondaryText: Color { isTransparent ? AppSettings.sublineGrey : .white.opacity(0.85) }
+    private var accentText: Color { isTransparent ? themeColor : .white }
 
     var body: some View {
         switch family {
@@ -74,7 +74,7 @@ struct CalendarWidgetEntryView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
-                        .background(Color.red, in: Capsule())
+                        .background(themeColor, in: Capsule())
                 }
             }
             Text(WidgetLunarHelper.weekdayShortName(for: date))
@@ -117,7 +117,7 @@ struct CalendarWidgetEntryView: View {
                     .foregroundStyle(secondaryText)
                 Spacer()
                 Text("\(g.component(.year, from: today)) / \(g.component(.month, from: today)) · \(todayInfo.week)")
-                    .font(.headline)
+                    .font(.system(size: AppSettings.titleFontSize))
                     .foregroundStyle(primaryText)
                 Spacer()
                 Image(systemName: "chevron.right")
@@ -128,7 +128,7 @@ struct CalendarWidgetEntryView: View {
             HStack(spacing: 0) {
                 ForEach(WidgetLunarHelper.weekdaySymbols(), id: \.self) { w in
                     Text(w)
-                        .font(.caption)
+                        .font(.system(size: AppSettings.weekdayFontSize))
                         .foregroundStyle(secondaryText)
                         .frame(maxWidth: .infinity)
                 }
@@ -141,13 +141,13 @@ struct CalendarWidgetEntryView: View {
                     Link(destination: deepLink(for: day)) {
                         VStack(spacing: 2) {
                             Text("\(g.component(.day, from: day))")
-                                .font(.headline)
+                                .font(.system(size: AppSettings.dayNumberFontSize))
                                 .fontWeight(isToday ? .bold : .regular)
                                 .foregroundStyle(isToday ? .white : primaryText)
-                                .frame(width: 30, height: 30)
-                                .background(isToday ? Color.red : Color.clear, in: Circle())
+                                .frame(width: AppSettings.todayCircleSize, height: AppSettings.todayCircleSize)
+                                .background(isToday ? themeColor : Color.clear, in: Circle())
                             Text(info.displayName ?? WidgetLunarHelper.lunarShortString(for: day))
-                                .font(.caption2)
+                                .font(.system(size: AppSettings.sublineFontSize))
                                 .lineLimit(1)
                                 .foregroundStyle(info.hasHoliday ? accentText : secondaryText)
                             if info.worktime == 2 {
@@ -168,8 +168,8 @@ struct CalendarWidgetEntryView: View {
             // 底部信息行：红竖线 + 日期/周/干支/农历
             HStack(spacing: 8) {
                 Rectangle()
-                    .fill(Color.red)
-                    .frame(width: 3)
+                    .fill(themeColor)
+                    .frame(width: 5)
                 Text("\(g.component(.month, from: today))月\(g.component(.day, from: today))日 第\(todayInfo.week)周 \(WidgetLunarHelper.stemBranchYear(for: today).dropLast())(\(WidgetLunarHelper.zodiac(for: today)))年 \(WidgetLunarHelper.lunarMonthName(for: today)) \(WidgetLunarHelper.lunarDayName(for: today))")
                     .font(.subheadline)
                     .foregroundStyle(primaryText)
