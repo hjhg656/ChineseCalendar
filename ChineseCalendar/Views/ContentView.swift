@@ -36,6 +36,8 @@ struct ContentView: View {
     @State private var showDatePicker = false
     @State private var showAddEvent = false
     @State private var showPushUpdate = false
+    @State private var pushUpdateMessage = ""
+    @State private var isSyncingHolidays = false
     @State private var toast: String? = nil
     @State private var didApplyTodayMode = false
     @StateObject private var eventStore = EventStore()
@@ -167,7 +169,7 @@ struct ContentView: View {
         .alert("更新节日推送", isPresented: $showPushUpdate) {
             Button("知道了", role: .cancel) { }
         } message: {
-            Text("内置节假日表已是最新，覆盖 2025–2027 年（按国务院办公厅放假通知）。2028 年的安排公布后需要更新 App 里的表。")
+            Text(pushUpdateMessage)
         }
         .overlay(alignment: .top) {
             if let toast {
@@ -467,9 +469,20 @@ struct ContentView: View {
         case "showToday":
             goToday()
         case "updatePush":
-            showPushUpdate = true
+            syncHolidays()
         default:
             break
+        }
+    }
+
+    /// 主屏幕快捷操作“更新节日推送”：真的去接口拉下一年（2.6 起）。
+    private func syncHolidays() {
+        guard !isSyncingHolidays else { return }
+        isSyncingHolidays = true
+        Task {
+            pushUpdateMessage = await HolidayAPIService.syncNextYear()
+            isSyncingHolidays = false
+            showPushUpdate = true
         }
     }
 
