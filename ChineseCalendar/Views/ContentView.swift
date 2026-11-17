@@ -9,8 +9,8 @@ struct ContentView: View {
 
     /// 动效统一走这两个：减弱动态效果打开时全部关掉（iOS 规范：提供一条同样可用的无动画路径）。
     /// 翻月/点日期/选年月用 0.3s，滑杆与提示用 0.25s——不同距离的过渡不用同一个时长。
-    private var slideAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.3) }
-    private var quickAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.25) }
+    private var slideAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
+    private var quickAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.25) }
 
     @AppStorage(AppSettings.showWeekKey, store: AppSettings.sharedDefaults) private var showWeek = false
     @AppStorage(AppSettings.useSingleLineModeKey, store: AppSettings.sharedDefaults) private var weekOnly = false
@@ -460,7 +460,7 @@ struct DayDetailView: View {
     @ObservedObject var eventStore: EventStore
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var quickAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.25) }
+    private var quickAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.25) }
 
     private var info: ChineseCalendarHelper.DayInfo { ChineseCalendarHelper.dayInfo(for: date) }
 
@@ -580,7 +580,7 @@ struct YearMonthPickerView: View {
     @Binding var isPresented: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    private var slideAnimation: Animation { reduceMotion ? .none : .easeInOut(duration: 0.3) }
+    private var slideAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
     private var themeColor: Color { AppSettings.color(forKey: "appThemeColor", colorScheme: colorScheme) }
 
     @State private var pickedYear: Int
