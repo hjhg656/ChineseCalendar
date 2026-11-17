@@ -38,9 +38,18 @@ enum ChineseCalendarHelper {
         chinese.dateComponents([.year, .month, .day, .isLeapMonth], from: date)
     }
 
-    /// 农历年（按春节换年，用中国农历的 year 分量，春节前那几天算上一年）。
+    /// 农历年（按春节换年，春节前算上一年）。
+    /// 注意：Foundation 中国农历的 year 分量是黄帝纪元（2026 年对应 4663），
+    /// 不能直接当公历年用——2026 年会算成癸卯年。干支/生肖按公历年 + 春节分界推导：
+    /// 公历 1–2 月且农历还没到正月（腊月或冬月），还在上一个农历年。
     static func lunarYear(for date: Date) -> Int {
-        chinese.component(.year, from: date)
+        let gYear = gregorian.component(.year, from: date)
+        let gMonth = gregorian.component(.month, from: date)
+        let lunarMonth = lunarComponents(for: date).month ?? 1
+        if gMonth <= 2 && lunarMonth != 1 {
+            return gYear - 1
+        }
+        return gYear
     }
 
     /// 农历月名，闰月前面加“闰”，如“闰六月”。
@@ -244,7 +253,7 @@ enum ChineseCalendarHelper {
         let year = gregorian.component(.year, from: date)
         guard let nov11 = gregorian.date(from: DateComponents(year: year, month: 11, day: 11)) else { return nil }
         let week = weekContaining(nov11)
-        return week.contains(where: { isSameDay($0, date) }) ? "国际科学与和平周(本日所属的一周)" : nil
+        return week.contains(where: { isSameDay($0, date) }) ? "*国际科学与和平周(本日所属的一周)" : nil
     }
 
     // MARK: - 24 节气（按年内置日期表）
