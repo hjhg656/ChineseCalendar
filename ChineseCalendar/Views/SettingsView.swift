@@ -13,7 +13,7 @@ struct SettingsView: View {
     @AppStorage(AppSettings.calendarHeightScaleKey, store: AppSettings.sharedDefaults) private var heightScale = 1.0
     @AppStorage(AppSettings.positionScaleKey, store: AppSettings.sharedDefaults) private var positionScale = 0.5
 
-    @AppStorage(AppSettings.showWeekKey, store: AppSettings.sharedDefaults) private var showWeek = true
+    @AppStorage(AppSettings.showWeekKey, store: AppSettings.sharedDefaults) private var showWeek = false
     @AppStorage(AppSettings.useSingleLineModeKey, store: AppSettings.sharedDefaults) private var weekOnly = false
     @AppStorage(AppSettings.hideOtherDaysKey, store: AppSettings.sharedDefaults) private var hideOtherDays = false
     @AppStorage(AppSettings.hideHolidaysKey, store: AppSettings.sharedDefaults) private var hideHolidays = false
