@@ -44,8 +44,12 @@ enum AppSettings {
     /// 标题/数字 #404040，副行（农历小字/星期头）#A6A6A6，今天红圆 #EA545D，
     /// 节日蓝灰 #708090，日详情蓝标签 #1070C0，事件蓝点 #0EA5E9。
     /// ink / sublineGrey 是深色自适应的（深色下用白 / 系统次级灰），其余取自上面的设置项。
-    static let ink = Color(UIColor { $0.userInterfaceStyle == .dark ? .white : UIColor(red: 0.25, green: 0.25, blue: 0.25, alpha: 1) })
-    static let sublineGrey = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.56, green: 0.56, blue: 0.58, alpha: 1) : UIColor(red: 0.65, green: 0.65, blue: 0.65, alpha: 1) })
+    static var ink: Color {
+        Color(UIColor { $0.userInterfaceStyle == .dark ? .white : UIColor(red: 0.25, green: 0.25, blue: 0.25, alpha: 1) })
+    }
+    static var sublineGrey: Color {
+        Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.56, green: 0.56, blue: 0.58, alpha: 1) : UIColor(red: 0.65, green: 0.65, blue: 0.65, alpha: 1) })
+    }
     static let tagBlue = Color(hex: "1070C0")
     static let measuredRed = Color(hex: "EA545D")
 
